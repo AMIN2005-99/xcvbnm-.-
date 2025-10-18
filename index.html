@@ -175,7 +175,50 @@
 
     // IMPORTANT: Paste your Google Web App URL here
     const webAppUrl = 'https://script.google.com/macros/s/AKfycbyxJPycyBM5IEr2KeUSg_93yDZpIhXdhIoWZdTMuDXoRnKtBFeG05PngI4X8jFHMHEP/exec';
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
 
+  var firstName = data.firstName;
+  var lastName = data.lastName;
+  var topic = data.topic;
+
+  // Server-side check for duplicate topic
+  var existingTopics = sheet.getRange("C:C").getValues(); // Assuming topics are in column C
+  for (var i = 0; i < existingTopics.length; i++) {
+    if (existingTopics[i][0] && existingTopics[i][0].toString().trim() === topic.toString().trim()) {
+      return ContentService.createTextOutput(JSON.stringify({ result: 'error', message: 'Topic already taken' }))
+                           .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // If topic is not taken, append new row
+  sheet.appendRow([firstName, lastName, topic, new Date()]);
+
+  return ContentService.createTextOutput(JSON.stringify({ result: 'success' }))
+                       .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var action = e.parameter.action;
+
+  if (action === 'getTakenTopics') {
+    var topicsRange = sheet.getRange("C:C").getValues(); // Assuming topics are in column C
+    var takenTopics = [];
+    for (var i = 1; i < topicsRange.length; i++) { // Start from 1 to skip header row
+      if (topicsRange[i][0]) {
+        takenTopics.push(topicsRange[i][0].toString().trim());
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ result: 'success', topics: takenTopics }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Handle other GET requests or return an error
+  return ContentService.createTextOutput(JSON.stringify({ result: 'error', message: 'Invalid action' }))
+                       .setMimeType(ContentService.MimeType.JSON);
+}
     // *** SERVER-SIDE INTEGRATION CONCEPT ***
     // To truly prevent duplicate selections across all users, you need:
     // 1. A Google Apps Script function that reads all existing topics from your sheet.
