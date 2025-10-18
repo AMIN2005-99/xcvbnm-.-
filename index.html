@@ -32,21 +32,21 @@
     label {
       font-weight: bold;
       color: #0d47a1;
-      margin-top: 10px; /* Added for spacing */
-      display: block; /* Ensures label takes full width */
+      margin-top: 10px;
+      display: block;
     }
 
-    input[type="text"] { /* Specificity for text inputs */
+    input[type="text"] {
       width: 100%;
       margin: 8px 0 15px;
       padding: 10px;
       border: 1px solid #90caf9;
       border-radius: 8px;
       font-size: 1em;
-      box-sizing: border-box; /* Ensures padding doesn't expand width */
+      box-sizing: border-box;
     }
 
-    #searchTopic, #customTopicInput { /* Apply styling to custom topic input */
+    #searchTopic, #customTopicInput {
       margin-bottom: 15px;
     }
 
@@ -55,8 +55,8 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 10px;
       margin-top: 10px;
-      margin-bottom: 20px; /* Added spacing below topics */
-      min-height: 50px; /* To prevent layout shift if all topics are removed */
+      margin-bottom: 20px;
+      min-height: 50px;
     }
 
     .topic-card {
@@ -68,7 +68,7 @@
       transition: all 0.2s;
     }
 
-    .topic-card:hover { /* Hover effect for selectable cards */
+    .topic-card:hover {
       background: #bbdefb;
     }
 
@@ -86,15 +86,15 @@
       border-radius: 10px;
       font-size: 1em;
       cursor: pointer;
-      width: 100%; /* Make button full width */
-      margin-top: 20px; /* Added spacing above button */
+      width: 100%;
+      margin-top: 20px;
     }
 
-    button:hover:not(:disabled) { /* Hover effect only for non-disabled button */
+    button:hover:not(:disabled) {
       background: #1565c0;
     }
 
-    button:disabled { /* Style for disabled button */
+    button:disabled {
       background: #90caf9;
       cursor: not-allowed;
     }
@@ -167,22 +167,18 @@
     const form = document.getElementById('studentForm');
     const noTopicsMessage = document.getElementById('noTopicsMessage');
     let selectedTopic = null;
-    let takenTopics = []; // Client-side tracking of taken topics
+    let takenTopics = []; // Client-side tracking of taken topics from server
 
     // IMPORTANT: Paste your Google Web App URL here
-    const webAppUrl = 'https://script.google.com/macros/s/AKfycbyxJPycyBM5IEr2KeUSg_93yDZpIhXdhIoWZdTMuDXoRnKtBFeG05PngI4X8jFHMHEP/exec';
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbyNBy8HU-l7DYPUq3uYdRy3bBc25b5jflqQURU1tBnEeyxp-v_3rTT831zL8fH2gi0L/exec';
 
-    // --- Server-Side Integration for Taken Topics ---
-    // This function will fetch topics already submitted from your Google Sheet.
-    // It assumes your Google Apps Script has a doGet(e) function like the one provided previously
-    // that returns a JSON array of taken topics when 'action=getTakenTopics' is passed.
     async function fetchTakenTopicsFromServer() {
         try {
             const response = await fetch(webAppUrl + '?action=getTakenTopics');
             const data = await response.json();
             if (data.result === 'success' && Array.isArray(data.topics)) {
-                // Ensure unique topics in case of server-side duplicates or malformed data
-                takenTopics = Array.from(new Set(data.topics.map(t => t.trim())));
+                // Ensure unique topics and trim whitespace
+                takenTopics = Array.from(new Set(data.topics.map(t => t.toString().trim())));
                 loadTopics(); // Now render topics with the fetched taken ones removed
             } else {
                 console.error('Failed to fetch taken topics:', data.message || 'Unknown error');
@@ -259,20 +255,26 @@
         finalTopic = selectedTopic; // Otherwise, use the selected predefined topic
       }
 
+      // Basic client-side validation
+      if (!firstName || !lastName) {
+          alert("الرجاء إدخال الاسم واللقب.");
+          return;
+      }
+
       if (!finalTopic) {
         alert("يرجى اختيار موضوع من القائمة أو إدخال موضوعك الخاص.");
         return;
       }
 
-      // Client-side check for pre-defined topics that might have been removed
-      // This is primarily for custom topics that might match a previously taken predefined one.
-      if (allPredefinedTopics.includes(finalTopic) && takenTopics.includes(finalTopic)) {
+      // IMPORTANT: The definitive check for duplicates happens on the server.
+      // This client-side check is mostly for immediate feedback on predefined topics
+      // and to prevent submitting custom topics that match already-taken predefined ones
+      // before hitting the server.
+      if (takenTopics.includes(finalTopic)) {
           alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر أو إدخال موضوع فريد.`);
-          return;
+          return; // Stop submission
       }
-      // Also check if a custom topic (if it exists) matches an existing custom topic (not ideal client-side, better server-side)
-      // For truly unique custom topics, server-side validation is critical.
-
+      
       const submitButton = form.querySelector('button[type="submit"]');
       submitButton.disabled = true;
       submitButton.textContent = 'جار الإرسال...';
@@ -296,7 +298,7 @@
         if (data.result === 'success') {
           alert("✅ تم الحجز بنجاح!");
           
-          // Add the successfully submitted topic to the taken list
+          // Add the successfully submitted topic to the client-side taken list
           takenTopics.push(finalTopic);
           
           form.reset();
@@ -306,15 +308,16 @@
           
           loadTopics(); // Re-render topics to remove the newly taken one
         } else {
-          // If the server explicitly says the topic is taken (e.g., from your Apps Script)
+          // If the server explicitly says the topic is taken (this is the definitive check)
           if (data.message && data.message.includes('Topic already taken')) {
               alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر أو إدخال موضوع فريد.`);
               // If the server confirms it's taken, add it to our client-side list and refresh
-              if (!takenTopics.includes(finalTopic)) {
+              if (!takenTopics.includes(finalTopic)) { // Ensure it's not added twice
                   takenTopics.push(finalTopic);
               }
-              loadTopics(); // Refresh to ensure it's removed if it was a predefined one
+              loadTopics(); // Refresh to ensure it's removed if it was a predefined one, or for custom topic it'll remain
           } else {
+              // General error from server
               throw new Error(data.message || 'An unknown error occurred.');
           }
         }
