@@ -56,6 +56,7 @@
       gap: 10px;
       margin-top: 10px;
       margin-bottom: 20px; /* Added spacing below topics */
+      min-height: 50px; /* To prevent layout shift if all topics are removed */
     }
 
     .topic-card {
@@ -67,7 +68,7 @@
       transition: all 0.2s;
     }
 
-    .topic-card:hover:not(.disabled) { /* Hover effect only for non-disabled cards */
+    .topic-card:hover { /* Hover effect for selectable cards */
       background: #bbdefb;
     }
 
@@ -75,13 +76,6 @@
       background: #2196f3;
       color: white;
       font-weight: bold;
-    }
-
-    .topic-card.disabled { /* Style for taken/disabled topics */
-      background: #e0e0e0;
-      color: #757575;
-      cursor: not-allowed;
-      text-decoration: line-through;
     }
 
     button {
@@ -120,19 +114,20 @@
     <label for="lastName">اللقب:</label>
     <input type="text" id="lastName" required="" placeholder="أدخل لقبك">
 
-    <label for="searchTopic">ابحث في المواضيع المقترحة:</label>
+    <label for="searchTopic">ابحث في المواضيع المتاحة:</label>
     <input type="text" id="searchTopic" placeholder="ابحث في المواضيع...">
 
     <div class="topics" id="topicsContainer"></div>
+    <div id="noTopicsMessage" style="text-align: center; color: #757575; display: none;">لا توجد مواضيع مقترحة متاحة حاليًا.</div>
 
-    <label for="customTopicInput">أو أدخل موضوعك الخاص (لا يمكنك اختيار موضوع مقترح مع هذا):</label>
+    <label for="customTopicInput">أو أدخل موضوعك الخاص (سيتم إلغاء اختيار أي موضوع مقترح):</label>
     <input type="text" id="customTopicInput" placeholder="أدخل موضوعًا جديدًا هنا...">
 
     <button type="submit">تأكيد الاختيار ✅</button>
   </form>
 
   <script>
-    const topics = [
+    const allPredefinedTopics = [ // Original list of all topics
       "الذات والوعي",
       "رحلتك الخاصة: كيف تكتشف نفسك قبل أن تختار طريقك؟",
       "من الفوضى إلى التركيز: فن إدارة انتباهك في زمن التشويش",
@@ -170,122 +165,86 @@
     const searchInput = document.getElementById('searchTopic');
     const customTopicInput = document.getElementById('customTopicInput');
     const form = document.getElementById('studentForm');
+    const noTopicsMessage = document.getElementById('noTopicsMessage');
     let selectedTopic = null;
     let takenTopics = []; // Client-side tracking of taken topics
 
     // IMPORTANT: Paste your Google Web App URL here
     const webAppUrl = 'https://script.google.com/macros/s/AKfycbyxJPycyBM5IEr2KeUSg_93yDZpIhXdhIoWZdTMuDXoRnKtBFeG05PngI4X8jFHMHEP/exec';
-function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
 
-  var firstName = data.firstName;
-  var lastName = data.lastName;
-  var topic = data.topic;
-
-  // Server-side check for duplicate topic
-  var existingTopics = sheet.getRange("C:C").getValues(); // Assuming topics are in column C
-  for (var i = 0; i < existingTopics.length; i++) {
-    if (existingTopics[i][0] && existingTopics[i][0].toString().trim() === topic.toString().trim()) {
-      return ContentService.createTextOutput(JSON.stringify({ result: 'error', message: 'Topic already taken' }))
-                           .setMimeType(ContentService.MimeType.JSON);
-    }
-  }
-
-  // If topic is not taken, append new row
-  sheet.appendRow([firstName, lastName, topic, new Date()]);
-
-  return ContentService.createTextOutput(JSON.stringify({ result: 'success' }))
-                       .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var action = e.parameter.action;
-
-  if (action === 'getTakenTopics') {
-    var topicsRange = sheet.getRange("C:C").getValues(); // Assuming topics are in column C
-    var takenTopics = [];
-    for (var i = 1; i < topicsRange.length; i++) { // Start from 1 to skip header row
-      if (topicsRange[i][0]) {
-        takenTopics.push(topicsRange[i][0].toString().trim());
-      }
-    }
-    return ContentService.createTextOutput(JSON.stringify({ result: 'success', topics: takenTopics }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // Handle other GET requests or return an error
-  return ContentService.createTextOutput(JSON.stringify({ result: 'error', message: 'Invalid action' }))
-                       .setMimeType(ContentService.MimeType.JSON);
-}
-    // *** SERVER-SIDE INTEGRATION CONCEPT ***
-    // To truly prevent duplicate selections across all users, you need:
-    // 1. A Google Apps Script function that reads all existing topics from your sheet.
-    // 2. A separate 'GET' endpoint in your Apps Script that returns this list.
-    // 3. Call this endpoint here to populate 'takenTopics' when the page loads.
-    // Example:
-    /*
+    // --- Server-Side Integration for Taken Topics ---
+    // This function will fetch topics already submitted from your Google Sheet.
+    // It assumes your Google Apps Script has a doGet(e) function like the one provided previously
+    // that returns a JSON array of taken topics when 'action=getTakenTopics' is passed.
     async function fetchTakenTopicsFromServer() {
         try {
-            const response = await fetch(webAppUrl + '?action=getTakenTopics'); // Assuming you add ?action=getTakenTopics
+            const response = await fetch(webAppUrl + '?action=getTakenTopics');
             const data = await response.json();
-            if (data.result === 'success' && data.topics) {
-                takenTopics = data.topics;
-                loadTopics(); // Reload topics with disabled ones
+            if (data.result === 'success' && Array.isArray(data.topics)) {
+                // Ensure unique topics in case of server-side duplicates or malformed data
+                takenTopics = Array.from(new Set(data.topics.map(t => t.trim())));
+                loadTopics(); // Now render topics with the fetched taken ones removed
+            } else {
+                console.error('Failed to fetch taken topics:', data.message || 'Unknown error');
+                loadTopics(); // Still load topics even if fetching fails
             }
         } catch (error) {
             console.error('Error fetching taken topics:', error);
+            loadTopics(); // Still load topics if there's a network error
         }
     }
-    */
-    // Call fetchTakenTopicsFromServer() at the end instead of loadTopics() if implemented
 
-    function disableAllPredefinedTopics() {
-      document.querySelectorAll('.topic-card').forEach(c => {
-        c.classList.remove('selected');
-        selectedTopic = null; // Clear selected predefined topic
-      });
+    function clearPredefinedTopicSelection() {
+      document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
+      selectedTopic = null; // Clear selected predefined topic
     }
 
     function loadTopics() {
       topicsContainer.innerHTML = '';
-      topics.forEach(topic => {
+      const availableTopics = allPredefinedTopics.filter(topic => !takenTopics.includes(topic));
+
+      if (availableTopics.length === 0) {
+          noTopicsMessage.style.display = 'block';
+      } else {
+          noTopicsMessage.style.display = 'none';
+      }
+
+      availableTopics.forEach(topic => {
         const card = document.createElement('div');
         card.className = 'topic-card';
         card.textContent = topic;
-
-        if (takenTopics.includes(topic)) { // Check if topic is already taken
-            card.classList.add('disabled');
-            card.style.cursor = 'not-allowed'; // Explicitly set cursor
-            card.removeEventListener('click', null); // Remove click listener if disabled
-        } else {
-            card.addEventListener('click', () => {
-              disableAllPredefinedTopics(); // Deselect any other predefined topic
-              customTopicInput.value = ''; // Clear custom input
-              card.classList.add('selected');
-              selectedTopic = topic;
-            });
-        }
+        
+        card.addEventListener('click', () => {
+          clearPredefinedTopicSelection(); // Deselect any other predefined topic
+          customTopicInput.value = ''; // Clear custom input
+          card.classList.add('selected');
+          selectedTopic = topic;
+        });
         topicsContainer.appendChild(card);
+      });
+
+      // After re-rendering, ensure search filter is reapplied
+      applySearchFilter(searchInput.value.toLowerCase());
+    }
+
+    function applySearchFilter(term) {
+      document.querySelectorAll('.topic-card').forEach(card => {
+        card.style.display = card.textContent.toLowerCase().includes(term) ? 'block' : 'none';
       });
     }
 
     searchInput.addEventListener('input', e => {
-      const term = e.target.value.toLowerCase();
-      document.querySelectorAll('.topic-card').forEach(card => {
-        card.style.display = card.textContent.toLowerCase().includes(term) ? 'block' : 'none';
-      });
+      applySearchFilter(e.target.value.toLowerCase());
     });
 
     customTopicInput.addEventListener('input', () => {
         // If user types in custom topic, deselect any predefined topic
         if (customTopicInput.value.trim() !== '') {
-            disableAllPredefinedTopics();
+            clearPredefinedTopicSelection();
         }
     });
 
-    form.addEventListener('submit', async e => { // Added 'async' keyword
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       
       const firstName = document.getElementById('firstName').value.trim();
@@ -305,11 +264,14 @@ function doGet(e) {
         return;
       }
 
-      // Check if the chosen topic is already taken (client-side check)
-      if (takenTopics.includes(finalTopic)) {
-          alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر.`);
+      // Client-side check for pre-defined topics that might have been removed
+      // This is primarily for custom topics that might match a previously taken predefined one.
+      if (allPredefinedTopics.includes(finalTopic) && takenTopics.includes(finalTopic)) {
+          alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر أو إدخال موضوع فريد.`);
           return;
       }
+      // Also check if a custom topic (if it exists) matches an existing custom topic (not ideal client-side, better server-side)
+      // For truly unique custom topics, server-side validation is critical.
 
       const submitButton = form.querySelector('button[type="submit"]');
       submitButton.disabled = true;
@@ -321,31 +283,37 @@ function doGet(e) {
         topic: finalTopic
       };
 
-      try { // Use try-catch for async fetch
-        const response = await fetch(webAppUrl, { // Use await
+      try {
+        const response = await fetch(webAppUrl, {
           method: 'POST',
           body: JSON.stringify(dataObject),
           headers: {
             'Content-Type': 'text/plain;charset=utf-8',
           },
         });
-        const data = await response.json(); // Use await
+        const data = await response.json();
 
         if (data.result === 'success') {
           alert("✅ تم الحجز بنجاح!");
-          takenTopics.push(finalTopic); // Add to client-side taken topics
+          
+          // Add the successfully submitted topic to the taken list
+          takenTopics.push(finalTopic);
+          
           form.reset();
-          disableAllPredefinedTopics(); // Deselect all cards
+          clearPredefinedTopicSelection(); // Deselect all cards
           selectedTopic = null;
           customTopicInput.value = ''; // Clear custom input after successful submission
-          loadTopics(); // Reload topics to update disabled cards
+          
+          loadTopics(); // Re-render topics to remove the newly taken one
         } else {
-          // IMPORTANT: Your Google Apps Script should ideally return `result: 'error', message: 'Topic already taken'`
-          // if it detects a duplicate topic on the server-side.
+          // If the server explicitly says the topic is taken (e.g., from your Apps Script)
           if (data.message && data.message.includes('Topic already taken')) {
-              alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر.`);
-              takenTopics.push(finalTopic); // Assume it's taken if server confirms
-              loadTopics(); // Refresh to disable it
+              alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر أو إدخال موضوع فريد.`);
+              // If the server confirms it's taken, add it to our client-side list and refresh
+              if (!takenTopics.includes(finalTopic)) {
+                  takenTopics.push(finalTopic);
+              }
+              loadTopics(); // Refresh to ensure it's removed if it was a predefined one
           } else {
               throw new Error(data.message || 'An unknown error occurred.');
           }
@@ -359,9 +327,8 @@ function doGet(e) {
       }
     });
 
-    loadTopics();
-    // If you implement server-side fetching of taken topics, replace loadTopics() with fetchTakenTopicsFromServer()
-    // fetchTakenTopicsFromServer(); // Uncomment this line and implement the function
+    // Initial load: Fetch taken topics from server, then render.
+    fetchTakenTopicsFromServer();
   </script>
 </body>
 </html>
