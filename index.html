@@ -67,7 +67,7 @@
       transition: all 0.2s;
     }
 
-    .topic-card:hover {
+    .topic-card:hover:not(.disabled) { /* Hover effect only for non-disabled cards */
       background: #bbdefb;
     }
 
@@ -75,6 +75,13 @@
       background: #2196f3;
       color: white;
       font-weight: bold;
+    }
+
+    .topic-card.disabled { /* Style for taken/disabled topics */
+      background: #e0e0e0;
+      color: #757575;
+      cursor: not-allowed;
+      text-decoration: line-through;
     }
 
     button {
@@ -89,8 +96,13 @@
       margin-top: 20px; /* Added spacing above button */
     }
 
-    button:hover {
+    button:hover:not(:disabled) { /* Hover effect only for non-disabled button */
       background: #1565c0;
+    }
+
+    button:disabled { /* Style for disabled button */
+      background: #90caf9;
+      cursor: not-allowed;
     }
 
     @media (max-width: 768px) {
@@ -113,7 +125,7 @@
 
     <div class="topics" id="topicsContainer"></div>
 
-    <label for="customTopicInput">أو أدخل موضوعك الخاص:</label>
+    <label for="customTopicInput">أو أدخل موضوعك الخاص (لا يمكنك اختيار موضوع مقترح مع هذا):</label>
     <input type="text" id="customTopicInput" placeholder="أدخل موضوعًا جديدًا هنا...">
 
     <button type="submit">تأكيد الاختيار ✅</button>
@@ -156,12 +168,42 @@
 
     const topicsContainer = document.getElementById('topicsContainer');
     const searchInput = document.getElementById('searchTopic');
-    const customTopicInput = document.getElementById('customTopicInput'); // Get the new custom topic input
+    const customTopicInput = document.getElementById('customTopicInput');
     const form = document.getElementById('studentForm');
     let selectedTopic = null;
+    let takenTopics = []; // Client-side tracking of taken topics
 
     // IMPORTANT: Paste your Google Web App URL here
     const webAppUrl = 'https://script.google.com/macros/s/AKfycbyxJPycyBM5IEr2KeUSg_93yDZpIhXdhIoWZdTMuDXoRnKtBFeG05PngI4X8jFHMHEP/exec';
+
+    // *** SERVER-SIDE INTEGRATION CONCEPT ***
+    // To truly prevent duplicate selections across all users, you need:
+    // 1. A Google Apps Script function that reads all existing topics from your sheet.
+    // 2. A separate 'GET' endpoint in your Apps Script that returns this list.
+    // 3. Call this endpoint here to populate 'takenTopics' when the page loads.
+    // Example:
+    /*
+    async function fetchTakenTopicsFromServer() {
+        try {
+            const response = await fetch(webAppUrl + '?action=getTakenTopics'); // Assuming you add ?action=getTakenTopics
+            const data = await response.json();
+            if (data.result === 'success' && data.topics) {
+                takenTopics = data.topics;
+                loadTopics(); // Reload topics with disabled ones
+            }
+        } catch (error) {
+            console.error('Error fetching taken topics:', error);
+        }
+    }
+    */
+    // Call fetchTakenTopicsFromServer() at the end instead of loadTopics() if implemented
+
+    function disableAllPredefinedTopics() {
+      document.querySelectorAll('.topic-card').forEach(c => {
+        c.classList.remove('selected');
+        selectedTopic = null; // Clear selected predefined topic
+      });
+    }
 
     function loadTopics() {
       topicsContainer.innerHTML = '';
@@ -169,12 +211,19 @@
         const card = document.createElement('div');
         card.className = 'topic-card';
         card.textContent = topic;
-        card.addEventListener('click', () => {
-          document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          selectedTopic = topic;
-          customTopicInput.value = ''; // Clear custom input if a predefined topic is selected
-        });
+
+        if (takenTopics.includes(topic)) { // Check if topic is already taken
+            card.classList.add('disabled');
+            card.style.cursor = 'not-allowed'; // Explicitly set cursor
+            card.removeEventListener('click', null); // Remove click listener if disabled
+        } else {
+            card.addEventListener('click', () => {
+              disableAllPredefinedTopics(); // Deselect any other predefined topic
+              customTopicInput.value = ''; // Clear custom input
+              card.classList.add('selected');
+              selectedTopic = topic;
+            });
+        }
         topicsContainer.appendChild(card);
       });
     }
@@ -189,12 +238,11 @@
     customTopicInput.addEventListener('input', () => {
         // If user types in custom topic, deselect any predefined topic
         if (customTopicInput.value.trim() !== '') {
-            document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
-            selectedTopic = null; // Clear selected predefined topic
+            disableAllPredefinedTopics();
         }
     });
 
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => { // Added 'async' keyword
       e.preventDefault();
       
       const firstName = document.getElementById('firstName').value.trim();
@@ -214,6 +262,12 @@
         return;
       }
 
+      // Check if the chosen topic is already taken (client-side check)
+      if (takenTopics.includes(finalTopic)) {
+          alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر.`);
+          return;
+      }
+
       const submitButton = form.querySelector('button[type="submit"]');
       submitButton.disabled = true;
       submitButton.textContent = 'جار الإرسال...';
@@ -221,39 +275,50 @@
       const dataObject = {
         firstName: firstName,
         lastName: lastName,
-        topic: finalTopic // Use finalTopic which could be custom or predefined
+        topic: finalTopic
       };
 
-      fetch(webAppUrl, {
-        method: 'POST',
-        body: JSON.stringify(dataObject),
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-      })
-      .then(response => response.json())
-      .then(data => {
+      try { // Use try-catch for async fetch
+        const response = await fetch(webAppUrl, { // Use await
+          method: 'POST',
+          body: JSON.stringify(dataObject),
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+        });
+        const data = await response.json(); // Use await
+
         if (data.result === 'success') {
           alert("✅ تم الحجز بنجاح!");
+          takenTopics.push(finalTopic); // Add to client-side taken topics
           form.reset();
-          document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
+          disableAllPredefinedTopics(); // Deselect all cards
           selectedTopic = null;
           customTopicInput.value = ''; // Clear custom input after successful submission
+          loadTopics(); // Reload topics to update disabled cards
         } else {
-          throw new Error(data.message || 'An unknown error occurred.');
+          // IMPORTANT: Your Google Apps Script should ideally return `result: 'error', message: 'Topic already taken'`
+          // if it detects a duplicate topic on the server-side.
+          if (data.message && data.message.includes('Topic already taken')) {
+              alert(`الموضوع "${finalTopic}" مأخوذ بالفعل. يرجى اختيار موضوع آخر.`);
+              takenTopics.push(finalTopic); // Assume it's taken if server confirms
+              loadTopics(); // Refresh to disable it
+          } else {
+              throw new Error(data.message || 'An unknown error occurred.');
+          }
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Error:', error);
         alert("حدث خطأ. يرجى المحاولة مرة أخرى.");
-      })
-      .finally(() => {
+      } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'تأكيد الاختيار ✅';
-      });
+      }
     });
 
     loadTopics();
+    // If you implement server-side fetching of taken topics, replace loadTopics() with fetchTakenTopicsFromServer()
+    // fetchTakenTopicsFromServer(); // Uncomment this line and implement the function
   </script>
 </body>
 </html>
