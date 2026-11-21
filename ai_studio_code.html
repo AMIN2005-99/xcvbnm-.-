@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>جدول المجموعات 2026 - 2027</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      background: #eef2f7;
+      color: #1e293b;
+      padding: 30px 15px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .poster {
+      width: 100%;
+      max-width: 1080px;
+      background: #ffffff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e2e8f0;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 55%, #0d9488 100%);
+      color: #ffffff;
+      padding: 32px 36px;
+      text-align: center;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      font-size: 1rem;
+      color: #cbd5e1;
+      font-weight: 400;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 28px;
+      background: #f8fafc;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px 20px;
+      border: 1px solid #e2e8f0;
+      border-right: 5px solid #0d9488;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card.empty-names {
+      border-right-color: #94a3b8;
+      background: #f1f5f9;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 999px;
+    }
+
+    .date {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #0d9488;
+      background: #f0fdfa;
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccfbf1;
+    }
+
+    .date.missing {
+      color: #64748b;
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
+    .names {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.7;
+    }
+
+    .names.missing {
+      color: #94a3b8;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 14px;
+      background: #0f172a;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .poster {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="poster">
+    <div class="header">
+      <h1>جدول المجموعات</h1>
+      <p>نوفمبر 2026 — مارس 2027</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 1</span>
+          <span class="date">الخميس 26 نوفمبر 2026</span>
+        </div>
+        <div class="names">أداود صديق بن مصطفى وأبي إسماعيل عزالدين بن بانوح</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 2</span>
+          <span class="date">الخميس 3 ديسمبر 2026</span>
+        </div>
+        <div class="names">ناصر بوحجام يوسف بن عبد الكريم وبن عبد الله عبد الودود بن إبراهيم</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 3</span>
+          <span class="date">الخميس 10 ديسمبر 2026</span>
+        </div>
+        <div class="names">سيوسيو عبد السلام والشيخ بالحاج بكير بن حمو</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 4</span>
+          <span class="date">الخميس 17 ديسمبر 2026</span>
+        </div>
+        <div class="names">بن عمر أفلح بن عبد الوهاب وبابانجار زهير عبد الغني بن بكير</div>
+      </div>
+
+      <div class="card empty-names">
+        <div class="card-top">
+          <span class="badge">المجموعة 5</span>
+          <span class="date">الخميس 24 ديسمبر 2026</span>
+        </div>
+        <div class="names missing">— لم يتم تحديد الأسماء بعد —</div>
+      </div>
+
+      <div class="card empty-names">
+        <div class="card-top">
+          <span class="badge">المجموعة 6</span>
+          <span class="date">الخميس 31 ديسمبر 2026</span>
+        </div>
+        <div class="names missing">— لم يتم تحديد الأسماء بعد —</div>
+      </div>
+
+      <div class="card empty-names">
+        <div class="card-top">
+          <span class="badge">المجموعة 7</span>
+          <span class="date">الخميس 7 يناير 2027</span>
+        </div>
+        <div class="names missing">— لم يتم تحديد الأسماء بعد —</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 8</span>
+          <span class="date">الخميس 14 يناير 2027</span>
+        </div>
+        <div class="names">العنڨ إلياس بن أحمد وشريفي إلياس بن إبراهيم</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 9</span>
+          <span class="date">الخميس 21 يناير 2027</span>
+        </div>
+        <div class="names">عبد اللاوي مرموري محمد أمين بن علي ومعروف نور الإسلام بن بشير</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 10</span>
+          <span class="date">الخميس 28 يناير 2027</span>
+        </div>
+        <div class="names">أزغار يوسف الصديق بن إلياس ومقنين محمد</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 11</span>
+          <span class="date">الخميس 4 فبراير 2027</span>
+        </div>
+        <div class="names">دادي واعمر عبد الله بن محمد وزياط عصام</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 12</span>
+          <span class="date">الخميس 11 فبراير 2027</span>
+        </div>
+        <div class="names">بورورو توفيق بن داود وتيشعبت أحمد الهادي بن نور الدين</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 13</span>
+          <span class="date">الخميس 18 فبراير 2027</span>
+        </div>
+        <div class="names">كروم محمد بن سليمان وبوسعدة زكرياء بن باحمد</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 14</span>
+          <span class="date">الخميس 25 فبراير 2027</span>
+        </div>
+        <div class="names">دبوز صلاح الدين والحاج سعيد عبد الرحمن</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 15</span>
+          <span class="date">الخميس 4 مارس 2027</span>
+        </div>
+        <div class="names">بوڨايلة أحمد أنيس بن عمر وحمدي بابا عمر بن أحمد</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 16</span>
+          <span class="date">الخميس 11 مارس 2027</span>
+        </div>
+        <div class="names">بابانجارإسلام بن أحمد والشيخ صالح صالح بن محمد</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 17</span>
+          <span class="date missing">التاريخ غير محدد</span>
+        </div>
+        <div class="names">بوراس الحاج مصطفى بن كمال وبولنعاش أفلح بن مسعود</div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="badge">المجموعة 18</span>
+          <span class="date missing">التاريخ غير محدد</span>
+        </div>
+        <div class="names">مرزقاني صفوان بن أحمد وبن الناصر الناصر بن محمد</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      برنامج المجموعات الأسبوعي (كل يوم خميس)
+    </div>
+  </div>
+</body>
+</html>
